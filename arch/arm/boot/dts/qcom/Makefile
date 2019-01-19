@@ -152,8 +152,7 @@ dtb-$(CONFIG_ARCH_MDM9650) += mdm9650-ttp.dtb \
 	mdm9650-v1.1-nand-ccard-v2.dtb \
 	mdm9650-v1.1-emmc-pcie-ep-mtp.dtb \
 	mdm9650-v1.1-nand-pcie-ep-mtp.dtb \
-	mdm9650-v1.1-nand-cv2x.dtb \
-	mdm9650-v1.1-nand-rome-sdio-mtp.dtb
+	mdm9650-v1.1-nand-cv2x.dtb
 
 dtb-$(CONFIG_ARCH_SDX20) += sdx20-emmc-cdp.dtb \
 	sdx20-emmc-mtp.dtb \

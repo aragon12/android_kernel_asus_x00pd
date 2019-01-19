@@ -53,10 +53,6 @@
 		regulator-always-on;
 	};
 
-	pps {
-		use-system-time-ts;
-	};
-
 	qcom,ipc_router_external_ap_xprt {
 		compatible = "qcom,ipc-router-mhi-dev-xprt";
 		qcom,out-chan-id = <20>;
