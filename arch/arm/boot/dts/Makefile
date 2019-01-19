@@ -516,9 +516,16 @@ dtb-$(CONFIG_MACH_DOVE) += dove-cm-a510.dtb \
 	dove-d3plug.dtb \
 	dove-dove-db.dtb
 dtb-$(CONFIG_ARCH_MEDIATEK) += mt6589-aquaris5.dtb
-
+#liqiang@wind-mobi.com 20180217 begin
 #used for cleaning - not building
+ifeq ($(CONFIG_WIND_PRO_E300LWW),y)
+subdir- := qcom_E300LWW
+else ifeq ($(CONFIG_WIND_PRO_A306),y)
+subdir- := qcom_A306
+else 
 subdir- := qcom
+endif
+#liqiang@wind-mobi.com 20180217 end
 endif
 
 dtbs: $(addprefix $(obj)/, $(DTB_LIST))
