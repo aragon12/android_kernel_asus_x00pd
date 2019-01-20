@@ -8,6 +8,10 @@ config WIND_DEVICE_INFO
 	help
 		Select y or n
 
+#source "drivers/misc/wind_driver/fingerprint/Kconfig"
+source "drivers/misc/wind_driver/fingerprint/leadcore/Kconfig"
+source "drivers/misc/wind_driver/fingerprint/microarray/Kconfig"
+source "drivers/misc/wind_driver/fingerprint/sunwave/Kconfig"
 
 
 ## lihaiyan@wind-mobi.com 20171101 ---
