@@ -1137,4 +1137,14 @@ config TOUCHSCREEN_MAXIM_STI
 
 source "drivers/input/touchscreen/gt9xx/Kconfig"
 
+#heiao@wind-mobi.com 20180111
+source "drivers/input/touchscreen/ft5346i/Kconfig"
+source "drivers/input/touchscreen/gt917d/Kconfig"
+source "drivers/input/touchscreen/HX852xES/Kconfig"
+#heiao@wind-mobi.com 20180112
+
+#wangjun@wind-mobi.com 20180228 begin
+source "drivers/input/touchscreen/HX852xES_A306/Kconfig"
+#wangjun@wind-mobi.com 20180228 end
+
 endif

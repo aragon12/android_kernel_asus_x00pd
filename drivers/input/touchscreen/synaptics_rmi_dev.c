@@ -72,23 +72,25 @@ struct rmidev_data {
 	struct rmidev_handle *rmi_dev;
 };
 
+//lihaiyan@wind-mobi.com 20180305  for  January partner security advisory patch +++
 static struct device_attribute attrs[] = {
-	__ATTR(open, S_IWUSR | S_IWGRP,
+	__ATTR(open, S_IWUSR,
 			NULL,
 			rmidev_sysfs_open_store),
-	__ATTR(release, S_IWUSR | S_IWGRP,
+	__ATTR(release, S_IWUSR,
 			NULL,
 			rmidev_sysfs_release_store),
-	__ATTR(address, S_IWUSR | S_IWGRP,
+	__ATTR(address, S_IWUSR,
 			NULL,
 			rmidev_sysfs_address_store),
-	__ATTR(length, S_IWUSR | S_IWGRP,
+	__ATTR(length, S_IWUSR,
 			NULL,
 			rmidev_sysfs_length_store),
-	__ATTR(data, (S_IWUSR | S_IWGRP),
+	__ATTR(data, S_IWUSR,
 			rmidev_sysfs_data_show,
 			rmidev_sysfs_data_store),
 };
+//lihaiyan@wind-mobi.com 20180305  for  January partner security advisory patch ---
 
 static int rmidev_major_num;
 

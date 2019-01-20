@@ -63,8 +63,8 @@ obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
 obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
 obj-$(CONFIG_TOUCHSCREEN_SUN4I)		+= sun4i-ts.o
 obj-$(CONFIG_TOUCHSCREEN_SUR40)		+= sur40.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_v21) += synaptics_dsx/
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_v26) += synaptics_dsx_2.6/
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_v21) += synaptics_dsx/
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_v26) += synaptics_dsx_2.6/
 obj-$(CONFIG_TOUCHSCREEN_TI_AM335X_TSC)	+= ti_am335x_tsc.o
 obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
 obj-$(CONFIG_TOUCHSCREEN_TOUCHRIGHT)	+= touchright.o
@@ -90,3 +90,13 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
 obj-$(CONFIG_TOUCHSCREEN_GT9XX)		+= gt9xx/
+#hebiao@wind-mobi.com 20170824 begin
+obj-$(CONFIG_TOUCHSCREEN_FT5346I)		+= ft5346i/
+obj-$(CONFIG_TOUCHSCREEN_GT917D)		+= gt917d/
+obj-$(CONFIG_TOUCHSCREEN_HX852xES)		+= HX852xES/
+#hebiao@wind-mobi.com 20170824 end
+#hebiao@wind-mobi.com 20180228 begin
+
+obj-$(CONFIG_TOUCHSCREEN_HX852XES_A306)		+= HX852xES_A306/
+#hebiao@wind-mobi.com 20180228 end
+
