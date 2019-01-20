@@ -1,3 +1,7 @@
+#liulinsheng@wind-mobi.com 20171023 begin
+source "drivers/misc/qcom/usb_temp_check/Kconfig"
+#liulinsheng@wind-mobi.com 20171023 end
+
 #add by zhaozhensen@wind-mobi.com 20180110 begin
 source "drivers/misc/qcom/sim_int_default_set/Kconfig"
 #add by zhaozhensen@wind-mobi.com 20180110 end
