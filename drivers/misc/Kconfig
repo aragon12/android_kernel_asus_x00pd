@@ -627,4 +627,7 @@ source "drivers/misc/mic/Kconfig"
 source "drivers/misc/genwqe/Kconfig"
 source "drivers/misc/echo/Kconfig"
 source "drivers/misc/cxl/Kconfig"
+## lihaiyan@wind-mobi.com 20171030 +++
+source "drivers/misc/wind_driver/Kconfig"
+## lihaiyan@wind-mobi.com 20171030 ---
 endmenu

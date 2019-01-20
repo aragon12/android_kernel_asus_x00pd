@@ -73,3 +73,12 @@ obj-$(CONFIG_MEMORY_STATE_TIME) += memory_state_time.o
 obj-$(CONFIG_APDS9930)		+= apds993x.o
 obj-$(CONFIG_UID_SYS_STATS) += uid_sys_stats.o
 obj-$(CONFIG_MEMORY_STATE_TIME) += memory_state_time.o
+
+## lihaiyan@wind-mobi.com 20171030 +++
+obj-y += wind_driver/
+## lihaiyan@wind-mobi.com 20171030 ---
+## yutao@wind-mobi.com 20171230 +++
+obj-y += rf-status-detect.o
+## yutao@wind-mobi.com 20171230 ---
+
+
