@@ -19,6 +19,10 @@
 #include <linux/types.h>
 #include <linux/batterydata-lib.h>
 #include <linux/power_supply.h>
+//lvwenkang@wind-mobi.com 20180117  for record batt_id_kohm  begin
+#include <../misc/wind_driver/wind_device_info/wind_device_info.h>
+extern wind_device_info_t wind_device_info;
+//lvwenkang@wind-mobi.com 20180117  for record batt_id_kohm end
 
 static int of_batterydata_read_lut(const struct device_node *np,
 			int max_cols, int max_rows, int *ncols, int *nrows,
@@ -336,6 +340,23 @@ struct device_node *of_batterydata_get_best_profile(
 	}
 
 	batt_id_kohm = ret.intval / 1000;
+
+	//lvwenkang@wind-mobi.com 20180117	for record batt_id_kohm begin
+	pr_err("wind %s: batt_id_kohm=%d\n", __func__,batt_id_kohm);
+	if(batt_id_kohm >= 45 && batt_id_kohm <= 55){
+	sprintf(wind_device_info.battery_data.BAT_Model_Name, "%s", "C11P1707");
+	sprintf(wind_device_info.battery_data.Battery_type, "%s", "O");
+	wind_device_info.battery_data.g_bat_id = 01;
+	wind_device_info.battery_data.Driver_and_Data_Flash_Version = 2;                	//liulinsheng@wind-mobi.com 20180117
+	sprintf(wind_device_info.battery_data.Image_Version, "%s", "15.00.1801.24");        //liulinsheng@wind-mobi.com 20180117
+	}else if(batt_id_kohm >= 95 && batt_id_kohm <= 105){
+	sprintf(wind_device_info.battery_data.BAT_Model_Name, "%s", "C11P1707");
+	sprintf(wind_device_info.battery_data.Battery_type, "%s", "T");
+	wind_device_info.battery_data.g_bat_id = 03;
+	wind_device_info.battery_data.Driver_and_Data_Flash_Version = 3;                    //liulinsheng@wind-mobi.com 20180117
+	sprintf(wind_device_info.battery_data.Image_Version, "%s", "15.00.1801.24"); 		//liulinsheng@wind-mobi.com 20180117
+	}
+	//lvwenkang@wind-mobi.com 20180117	for record batt_id_kohm end
 
 	/* read battery id range percentage for best profile */
 	rc = of_property_read_u32(batterydata_container_node,

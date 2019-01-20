@@ -94,7 +94,7 @@ static struct wcd_mbhc_config mbhc_cfg = {
 	.swap_gnd_mic = NULL,
 	.hs_ext_micbias = false,
 	.key_code[0] = KEY_MEDIA,
-	.key_code[1] = KEY_VOICECOMMAND,
+	.key_code[1] = KEY_VOLUMEUP,  //KEY_VOICECOMMAND modified by guxuewei@wind-mobi.com 20180112
 	.key_code[2] = KEY_VOLUMEUP,
 	.key_code[3] = KEY_VOLUMEDOWN,
 	.key_code[4] = 0,
@@ -987,6 +987,25 @@ static int msm_vi_feed_tx_ch_put(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
+// wangjun@wind-mobi.com 20180301 begin 
+#ifdef CONFIG_WIND_PRO_A306
+//zhounengwen@wind-mobi.com 20180112 PA begin
+extern unsigned char aw87339_audio_kspk(void);
+extern unsigned char aw87339_audio_drcv(void);
+extern unsigned char aw87339_audio_off(void);
+static int ext_kspk_amp_get(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol);
+static int ext_kspk_amp_put(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol);
+static int ext_drcv_amp_get(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol);
+static int ext_drcv_amp_put(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol);
+
+static int aw87339_kspk_control = 0;
+static int aw87339_drcv_control = 0;
+static const char *const ext_kspk_amp_function[] = { "Off", "On" };
+static const char *const ext_drcv_amp_function[] = { "Off", "On" };
+//zhounengwen@wind-mobi.com 20180112 PA end
+#endif
+// wangjun@wind-mobi.com 20180301 end 
+
 static const struct soc_enum msm_snd_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(rx_bit_format_text),
 				rx_bit_format_text),
@@ -1002,6 +1021,16 @@ static const struct soc_enum msm_snd_enum[] = {
 				vi_feed_ch_text),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(mi2s_rx_sample_rate_text),
 				mi2s_rx_sample_rate_text),
+// wangjun@wind-mobi.com 20180301 begin 
+#ifdef CONFIG_WIND_PRO_A306
+	//zhounengwen@wind-mobi.com 20180112 PA begin
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_kspk_amp_function),
+				ext_kspk_amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ext_drcv_amp_function),
+				ext_drcv_amp_function),
+	//zhounengwen@wind-mobi.com 20180112 PA end
+#endif
+// wangjun@wind-mobi.com 20180301 end 
 };
 
 static const struct snd_kcontrol_new msm_snd_controls[] = {
@@ -1021,7 +1050,65 @@ static const struct snd_kcontrol_new msm_snd_controls[] = {
 			msm_vi_feed_tx_ch_get, msm_vi_feed_tx_ch_put),
 	SOC_ENUM_EXT("MI2S_RX SampleRate", msm_snd_enum[6],
 			mi2s_rx_sample_rate_get, mi2s_rx_sample_rate_put),
+// wangjun@wind-mobi.com 20180301 begin 
+#ifdef CONFIG_WIND_PRO_A306
+	//zhounengwen@wind-mobi.com 20180112 PA begin
+	SOC_ENUM_EXT("Ext_Speaker_Amp", msm_snd_enum[7],
+			ext_kspk_amp_get, ext_kspk_amp_put),
+	SOC_ENUM_EXT("Ext_Receiver_Amp", msm_snd_enum[8],
+			ext_drcv_amp_get, ext_drcv_amp_put),
+	//zhounengwen@wind-mobi.com 20180112 PA end
+	#endif
+// wangjun@wind-mobi.com 20180301 end
 };
+
+// wangjun@wind-mobi.com 20180301 begin 
+#ifdef CONFIG_WIND_PRO_A306
+//zhounengwen@wind-mobi.com 20180112 PA begin
+
+static int ext_kspk_amp_get(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = aw87339_kspk_control;
+	pr_debug("%s: aw87339_kspk_control = %d\n", __func__,aw87339_kspk_control);
+	return 0;
+}
+static int ext_kspk_amp_put(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol)
+{
+	if(ucontrol->value.integer.value[0] == aw87339_kspk_control)
+		return 1;
+	aw87339_kspk_control = ucontrol->value.integer.value[0];
+	
+	if(ucontrol->value.integer.value[0]) {
+		aw87339_audio_kspk();
+	} else {
+		aw87339_audio_off();
+	}
+	//pr_debug("%s: value.integer.value = %d\n", __func__,ucontrol->value.integer.value[0]);
+	return 0;
+}
+static int ext_drcv_amp_get(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = aw87339_drcv_control;
+	//pr_debug("%s: aw87339_drcv_control = %d\n", __func__,aw87339_drcv_control);
+	return 0;
+}
+static int ext_drcv_amp_put(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value *ucontrol)
+{
+	aw87339_drcv_control = ucontrol->value.integer.value[0];
+	if(ucontrol->value.integer.value[0] == aw87339_drcv_control)
+		return 1;
+	if(ucontrol->value.integer.value[0]) {
+		aw87339_audio_drcv();
+	} else {
+		aw87339_audio_off();
+	}
+		//pr_debug("%s: value.integer.value = %d\n", __func__,ucontrol->value.integer.value[0]);
+		return 0;
+}
+
+//zhounengwen@wind-mobi.com 20180112 PA end
+#endif
+// wangjun@wind-mobi.com 20180301 end 
 
 static int msm8952_mclk_event(struct snd_soc_dapm_widget *w,
 			      struct snd_kcontrol *kcontrol, int event)
@@ -1545,7 +1632,9 @@ static void *def_msm8952_wcd_mbhc_cal(void)
 		return NULL;
 
 #define S(X, Y) ((WCD_MBHC_CAL_PLUG_TYPE_PTR(msm8952_wcd_cal)->X) = (Y))
-	S(v_hs_max, 1500);
+    // wangjun@wind-mob.com 20180131 begin 
+	S(v_hs_max, 1700);
+    // wangjun@wind-mob.com 20180131 end 
 #undef S
 #define S(X, Y) ((WCD_MBHC_CAL_BTN_DET_PTR(msm8952_wcd_cal)->X) = (Y))
 	S(num_btn, WCD_MBHC_DEF_BUTTONS);

@@ -12,6 +12,10 @@ obj-$(CONFIG_SND_SOC_QDSP6V2) += snd-soc-qdsp6v2.o
 snd-soc-apq8084-objs := apq8084.o
 obj-$(CONFIG_SND_SOC_APQ8084) += snd-soc-apq8084.o
 
+#zhounengwen@wind-mobi.com 20180112 PA begin
+obj-$(CONFIG_SND_SOC_AW87339) += aw87339_audio.o
+#zhounengwen@wind-mobi.com 20180112 PA end
+
 #for CPE drivers
 snd-soc-cpe-objs := msm-cpe-lsm.o
 obj-$(CONFIG_SND_SOC_CPE) += snd-soc-cpe.o

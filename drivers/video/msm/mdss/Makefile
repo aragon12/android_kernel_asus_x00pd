@@ -1,5 +1,9 @@
 ccflags-y += -I$(src)
 
+#hebiao@wind-mobi.com 20171212 begin
+ccflags-y += -I$(srctree)/drivers/misc/wind_driver/wind_device_info/
+#hebiao@wind-mobi.com 20171212 endif
+
 obj-$(CONFIG_FB_MSM_MDSS_MHL3) += mhl3/
 
 mdss-mdp3-objs = mdp3.o mdp3_layer.o mdp3_dma.o mdp3_ctrl.o dsi_status_v2.o

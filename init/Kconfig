@@ -822,11 +822,11 @@ config IKCONFIG_PROC
 	---help---
 	  This option enables access to the kernel configuration file
 	  through /proc/config.gz.
-
+#liqiang@wind-mobi.com 2017 10 17 begin
 config LOG_BUF_SHIFT
 	int "Kernel log buffer size (16 => 64KB, 17 => 128KB)"
 	range 12 21
-	default 17
+	default 21
 	depends on PRINTK
 	help
 	  Select the minimal kernel log buffer size as a power of 2.
@@ -842,6 +842,7 @@ config LOG_BUF_SHIFT
 		     13 =>  8 KB
 		     12 =>  4 KB
 
+#liqiang@wind-mobi.com 2017 10 17 end
 config CONSOLE_FLUSH_ON_HOTPLUG
 	bool "Enable console flush configurable in hot plug code path"
 	depends on HOTPLUG_CPU

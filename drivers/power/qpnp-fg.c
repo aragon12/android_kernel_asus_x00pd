@@ -36,6 +36,17 @@
 #include <linux/alarmtimer.h>
 #include <linux/qpnp/qpnp-revid.h>
 
+//liqiang@wind-mobi.com 20171225 begin
+ struct fg_chip *g_fg_chip; 
+//liqiang@wind-mobi.com 20171025 end
+//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test begin
+#define AGING_POWER_TEST
+#if defined(AGING_POWER_TEST)
+#include <linux/proc_fs.h>
+#endif
+
+//liulinsheng@wind-mobi.com 20170925  for demoapp&&aging test  end
+
 /* Register offsets */
 
 /* Interrupt offsets */
@@ -78,6 +89,18 @@
 #define BCL_MA_TO_ADC(_current, _adc_val) {		\
 	_adc_val = (u8)((_current) * 100 / 976);	\
 }
+
+//liulinsheng@wind-mobi.com	 20171229 begin
+#define  buffer_proinfo_1_SIZE 1024*1
+unsigned char buffer_proinfo_1[buffer_proinfo_1_SIZE];
+unsigned char buffer_proinfo_1_u[buffer_proinfo_1_SIZE];
+#define PROINFO_BUFFER_PATH_BACKUP "/dev/block/bootdevice/by-name/proinfo"
+extern int wind_diag_backup_file_write(char * path, char *w_buf, int w_len);
+extern int wind_diag_file_read(char * path, char *r_buf, int r_len);
+//liulinsheng@wind-mobi.com	 20171229 end
+//added by lvwenkang@wind-mobi.com b--
+int g_batt_full_flag = 0;
+//added by lvwenkang@wind-mobi.com e--
 
 /* Debug Flag Definitions */
 enum {
@@ -123,6 +146,9 @@ enum current_sense_type {
 	EXTERNAL_CURRENT_SENSE,
 };
 
+//liulinsheng@wind-mobi.com 20171229 begin
+struct delayed_work  batterylife_charging_polling_work; 
+//liulinsheng@wind-mobi.com 20171229 end
 struct fg_mem_setting {
 	u16	address;
 	u8	offset;
@@ -432,6 +458,254 @@ struct fg_wakeup_source {
 	struct wakeup_source	source;
 	unsigned long		enabled;
 };
+//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test begin
+#if defined(AGING_POWER_TEST)
+unsigned int g_charger_state = 2; /*0 1 2*/
+unsigned int g_charger_demoapp_state = 0; 
+int demoapp_flag = 0;
+
+int batlife_stop_flag = 0;
+int demo_bat_stop_flag = 0;
+#define AGING_POWER_TEST_PROC_FOLDER "aging_power_test"
+#define AGING_POWER_TEST_PROC_CHARGING_CHARGESTATE "Charging_ChargeState"
+#define AGING_POWER_TEST_PROC_CHARGING_DEMOAPP_CHARGESTATE "Charging_DemoApp_ChargeState"
+ 
+static struct proc_dir_entry *aging_power_test_proc_dir = NULL;
+static struct proc_dir_entry *proc_Charging_ChargeState_file = NULL;
+static struct proc_dir_entry *proc_Charging_DemoApp_ChargeState_file = NULL;
+
+
+
+static int Charging_ChargeState_show(struct seq_file *m, void *v)
+{
+	
+	return seq_printf(m, "%u\n", g_charger_state);;
+}
+static int Charging_ChargeState_read(struct inode *inode, struct file *file)
+{
+	return single_open(file, Charging_ChargeState_show, NULL);
+}
+static ssize_t Charging_ChargeState_write(struct file *file, const char __user *buffer,
+			     size_t count, loff_t *ppos)
+{
+	unsigned long temp = 0; 
+	int err = kstrtoul_from_user(buffer, count, 0, &temp);
+	if (err)
+		return err;
+	g_charger_state = (unsigned int)temp;
+	return count;
+}
+
+static int Charging_ChargeState_demoapp_show(struct seq_file *m, void *v)
+{
+	
+	return seq_printf(m, "%u\n", g_charger_demoapp_state);;
+}
+static int Charging_DemoApp_ChargeState_read(struct inode *inode, struct file *file)
+{
+	return single_open(file, Charging_ChargeState_demoapp_show, NULL);
+}
+static ssize_t Charging_DemoApp_ChargeState_write(struct file *file, const char __user *buffer,
+			     size_t count, loff_t *ppos)
+{
+	unsigned long temp = 0; 
+	int err = kstrtoul_from_user(buffer, count, 0, &temp);
+	if (err)
+		return err;
+	g_charger_demoapp_state = (unsigned int)temp;
+	return count;
+}
+
+static const struct file_operations proc_Charging_ChargeState_file_ops = {
+	.open		= Charging_ChargeState_read,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.write 		= Charging_ChargeState_write,
+	.release	= single_release,
+};
+
+static const struct file_operations proc_Charging_DemoApp_ChargeState_file_ops = {
+	.open		= Charging_DemoApp_ChargeState_read,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.write 		= Charging_DemoApp_ChargeState_write,
+	.release	= single_release,
+};
+#if 0
+static ssize_t Charging_ChargeState_read(struct file *file, char *buf, size_t len, loff_t *pos)
+{
+	char *ptr = buf;
+	if (*pos) {
+		return 0;
+	}
+	
+	pr_err("wind g_charger_state = %d\n", g_charger_state);
+	ptr += sprintf(ptr,"%u\n", g_charger_state);
+	*pos += ptr - buf;
+	return (ptr -buf);
+	
+}
+static ssize_t Charging_ChargeState_write(struct file *file, const char *buff, size_t len, loff_t *pos)
+{
+   unsigned int temp = 0; 
+   sscanf(buff, "%u", &temp);
+   if(temp == 0 || temp == 1 || temp == 2)
+   	 g_charger_state = temp;
+   
+	pr_err("wind g_charger_state = %d\n", g_charger_state);
+	return len;
+}
+static struct file_operations proc_Charging_ChargeState_file_ops =
+{
+	.owner = THIS_MODULE,
+	.read = Charging_ChargeState_read,
+	.write = Charging_ChargeState_write,
+};
+
+static ssize_t Charging_DemoApp_ChargeState_read(struct file *file, char *buf, size_t len, loff_t *pos)
+{
+	char *ptr = buf;
+	if (*pos) {
+		return 0;
+	}
+	pr_err(  "wind g_charger_demoapp_state = %d\n", g_charger_demoapp_state);
+	ptr += sprintf(ptr,"%u\n", g_charger_demoapp_state);
+	*pos += ptr - buf;
+	return (ptr -buf);
+}
+static ssize_t Charging_DemoApp_ChargeState_write(struct file *file, const char *buff, size_t len, loff_t *pos)
+{
+   unsigned int temp = 0; 
+   sscanf(buff, "%u", &temp);
+   if(temp == 0 || temp == 1)
+   g_charger_demoapp_state = temp;
+   
+	pr_err(  "wind g_charger_demoapp_state = %d\n", g_charger_demoapp_state);
+	return len;
+}
+static struct file_operations proc_Charging_DemoApp_ChargeState_file_ops =
+{
+	.owner = THIS_MODULE,
+	.read = Charging_DemoApp_ChargeState_read,
+	.write = Charging_DemoApp_ChargeState_write,
+};
+#endif
+static int aging_power_test_proc_init(void)
+{
+	aging_power_test_proc_dir = proc_mkdir(AGING_POWER_TEST_PROC_FOLDER, NULL);
+	if (aging_power_test_proc_dir == NULL)
+	{
+		pr_err(" wind %s: aging_power_test_proc_dir file create failed!\n", __func__);
+		return -ENOMEM;
+	}
+
+	proc_Charging_ChargeState_file = proc_create(AGING_POWER_TEST_PROC_CHARGING_CHARGESTATE, (S_IRUGO | S_IWUSR), 
+		aging_power_test_proc_dir, &proc_Charging_ChargeState_file_ops);
+	if(proc_Charging_ChargeState_file == NULL)
+	{
+		pr_err("wind  %s: proc_Charging_ChargeState_file file create failed!\n", __func__);
+		remove_proc_entry( AGING_POWER_TEST_PROC_CHARGING_CHARGESTATE, aging_power_test_proc_dir );
+		return -ENOMEM;
+	}
+
+	proc_Charging_DemoApp_ChargeState_file = proc_create(AGING_POWER_TEST_PROC_CHARGING_DEMOAPP_CHARGESTATE, (S_IWUSR|S_IWUSR), 
+		aging_power_test_proc_dir, &proc_Charging_DemoApp_ChargeState_file_ops);
+	if(proc_Charging_DemoApp_ChargeState_file == NULL)
+	{
+		pr_err(" wind %s: proc_Charging_DemoApp_ChargeState_file create failed!\n", __func__);
+		remove_proc_entry( AGING_POWER_TEST_PROC_CHARGING_DEMOAPP_CHARGESTATE, aging_power_test_proc_dir );
+		return -ENOMEM;
+	}
+	
+	pr_err(" wind %s\n", __func__);
+	
+	return 0 ;
+}
+#endif
+//liulinsheng@wind-mobi.com 20170919 begin
+#ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+typedef struct {
+   unsigned char Batlife_mode;
+   unsigned char Batlife2Normal;
+   unsigned char Normal2Batlife;
+} BAT_LIFE_Struct;
+
+#define BATTERY_INIT_MODE   0
+#define BATTERY_NORMAL_MODE 1
+#define BATTERY_LIFE_MODE 2
+
+BAT_LIFE_Struct BATLIFE_status;
+
+signed int UI_SOC_BATLIFE = 0;
+signed int UI_SOC = 0;
+int demoapp_suspend_charger_flag = 0;
+bool bat_full_batlife = false;
+
+extern struct smbchg_chip *chip_for_fg; 
+extern int  smbchg_charging_enable(struct smbchg_chip *chip, bool en);
+//extern int smbchg_usb_suspend(struct smbchg_chip *chip, bool suspend);   //liulinsheng@wind-mobi.com 20171109
+static ssize_t show_Charging_batterylife(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "bm = %d, b2n = %c, n2b = %c \n", BATLIFE_status.Batlife_mode, BATLIFE_status.Batlife2Normal, BATLIFE_status.Normal2Batlife);
+}
+
+static ssize_t store_Charging_batterylife(struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+   unsigned int temp = 0; 
+   sscanf(buf, "%u", &temp);
+   pr_err( "wind-log bm temp = %d\n", temp);
+ 	pr_err(  "wind-log before bm = %d Batlife2Normal = %c Normal2Batlife = %c \n", BATLIFE_status.Batlife_mode, BATLIFE_status.Batlife2Normal,  BATLIFE_status.Normal2Batlife);
+	if(temp == BATTERY_NORMAL_MODE){
+		BATLIFE_status.Batlife_mode = BATTERY_NORMAL_MODE;
+		/*if(BATLIFE_status.Batlife_mode == BATTERY_LIFE_MODE){
+			
+			BATLIFE_status.Batlife_mode = BATTERY_NORMAL_MODE;
+			//BATLIFE_status.Batlife2Normal = 0;
+			//BATLIFE_status.Normal2Batlife = 0;	
+		}
+		*/
+		/*if(BATLIFE_status.Batlife_mode == BATTERY_INIT_MODE){  //when we lost rtc val 
+			BATLIFE_status.Batlife_mode = BATTERY_NORMAL_MODE;
+			BATLIFE_status.Batlife2Normal = 1;
+		    BATLIFE_status.Normal2Batlife = 0;		
+		}*/
+
+		
+		
+	} else if(temp == BATTERY_LIFE_MODE){  
+			BATLIFE_status.Batlife_mode = BATTERY_LIFE_MODE;
+		/*if((BATLIFE_status.Batlife_mode == BATTERY_NORMAL_MODE)  ){ 
+			BATLIFE_status.Batlife_mode = BATTERY_LIFE_MODE;
+			//BATLIFE_status.Batlife2Normal = 0;
+			//BATLIFE_status.Normal2Batlife = 0;
+
+		}*/
+
+		/*if(BATLIFE_status.Batlife_mode == BATTERY_INIT_MODE){  //when we lost rtc val
+			BATLIFE_status.Batlife_mode = BATTERY_LIFE_MODE;
+			BATLIFE_status.Batlife2Normal = 1;
+		    BATLIFE_status.Normal2Batlife = 0;		
+		}*/
+			
+	} 
+   	//set_rtc_spare_batlife_value(&BATLIFE_status); // save status to rtc memory
+	pr_err( "wind-log after bm = %d Batlife2Normal = %c Normal2Batlife = %c \n", BATLIFE_status.Batlife_mode, BATLIFE_status.Batlife2Normal,  BATLIFE_status.Normal2Batlife);
+	return size;
+}
+
+static DEVICE_ATTR(Charging_batterylife, 0664, show_Charging_batterylife, store_Charging_batterylife);
+static struct attribute *Charging_batterylife_attributes[] = {
+	&dev_attr_Charging_batterylife.attr,
+	NULL,
+};
+
+static struct attribute_group Charging_batterylife_attr_group = {
+	.attrs = Charging_batterylife_attributes
+};
+
+#endif
+//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test end
 
 static void fg_stay_awake(struct fg_wakeup_source *source)
 {
@@ -2237,6 +2511,8 @@ static int get_monotonic_soc_raw(struct fg_chip *chip)
 	return cap[0];
 }
 
+
+extern int get_prop_batt_status_produce(void);
 #define EMPTY_CAPACITY		0
 #define DEFAULT_CAPACITY	50
 #define MISSING_CAPACITY	100
@@ -2264,6 +2540,10 @@ static int get_prop_capacity(struct fg_chip *chip)
 	if (chip->charge_full)
 		return FULL_CAPACITY;
 
+    if(get_prop_batt_status_produce() == POWER_SUPPLY_STATUS_FULL){
+	printk("wind:STATUS_FUL");
+	return FULL_CAPACITY;
+	}
 	if (chip->soc_empty) {
 		if (fg_debug_mask & FG_POWER_SUPPLY)
 			pr_info_ratelimited("capacity: %d, EMPTY\n",
@@ -2293,9 +2573,111 @@ static int get_prop_capacity(struct fg_chip *chip)
 	} else if (msoc == FULL_SOC_RAW) {
 		return FULL_CAPACITY;
 	}
+	
+//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test  begin
+#ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+UI_SOC= DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 2),FULL_SOC_RAW - 2) + 1;
+	#if defined(AGING_POWER_TEST)
+		if(g_charger_state == 0){
+			 pr_err("wind  g_charger_state = %d\n", g_charger_state);
+			 pr_err("wind g_charger_state == 0 Stop charging\n");
+		}else if(g_charger_state == 1){
+			g_charger_state = 2;
+			pr_err("wind  g_charger_state = %d\n", g_charger_state);
+			pr_err("wind g_charger_state != 0 START charging\n");
+		}
+		 if(g_charger_demoapp_state == 1)
+		 { //this for demo app
+			if(UI_SOC	>= 60 ){
+					demoapp_flag = 1;
+					demoapp_suspend_charger_flag = 1;
+					//smbchg_usb_suspend(chip_for_fg, true);    //liulinsheng@wind-mobi.com 20171109
+					pr_err("wind  demoapp_flag	=%d,UI_SOC = %d  Stop\n",  demoapp_flag,UI_SOC); 	
+				}else if(UI_SOC < 55 && demoapp_flag == 1){
+					demoapp_flag = 0;
+					pr_err("wind  demoapp_flag	=%d,UI_SOC = %d  START\n",  demoapp_flag,UI_SOC); 	
+				}else if((UI_SOC >= 55) && (demoapp_flag == 1) && (UI_SOC <= 60)){
+					
+					if(58 >= UI_SOC){
+					demoapp_suspend_charger_flag = 0;
+					//smbchg_usb_suspend(chip_for_fg, false);      
+					printk("wind-log:suspend_charge-UI_SOC2 = %d Stop\n", UI_SOC);	
+				}
+				
+					pr_err("wind  demoapp_flag	=%d,UI_SOC1 = %d  Stop\n",  demoapp_flag,UI_SOC); 	
+				}else if((UI_SOC >= 55) && (demoapp_flag == 0) && (UI_SOC <= 60)){
+			  // do nothing
+				}
+			}else{
+				if(demoapp_flag ==1){
+					demoapp_flag = 0;
+					pr_err("wind  demoapp_flag	=%d,UI_SOC = %d Stop\n",  demoapp_flag,UI_SOC); 	
+				}
+		}
+		
+		if((g_charger_state == 0) || (demoapp_flag ==1 && g_charger_demoapp_state == 1))
+				{
+						if(chip_for_fg)
+						{
+							demo_bat_stop_flag = 1;
+							//smbchg_charging_enable(chip_for_fg,false);
+						}
+						pr_err( "wind :Stop charging g_charger_state = %d,demoapp_flag = %d,g_charger_demoapp_state = %d,UI_SOC= %d\n",
+						g_charger_state,demoapp_flag,g_charger_demoapp_state,UI_SOC);
+				}else{
+						if(chip_for_fg)
+							{
+							demo_bat_stop_flag = 0;	
+							//smbchg_charging_enable(chip_for_fg,true);
+							}
+						pr_err( "wind :start g_charger_state = %d,demoapp_flag = %d,g_charger_demoapp_state = %d,UI_SOC= %d\n",
+						g_charger_state,demoapp_flag,g_charger_demoapp_state,UI_SOC);
+				}
+		#endif		
+		//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test  end
+		//lvwenkang@wind-mobi.com 20180222	 begin  
 
-	return DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 2),
-			FULL_SOC_RAW - 2) + 1;
+	if((BATLIFE_status.Normal2Batlife == 'y') && (UI_SOC >= 40) )
+	{
+			UI_SOC_BATLIFE = 40 + (UI_SOC-40)*60/40;
+			if(UI_SOC_BATLIFE >= 100){
+					UI_SOC_BATLIFE = 100;	
+				}
+	
+			if(UI_SOC >= 80)
+			{
+			
+					bat_full_batlife = true;
+					
+					if(chip_for_fg){
+						batlife_stop_flag = 1;
+						//smbchg_charging_enable(chip_for_fg,false);
+					}
+					pr_info("wind %s  : bat_full_batlife =%d,batlife_stop_flag =%d,UI_SOC = %d\n",
+						__func__,bat_full_batlife,batlife_stop_flag,UI_SOC);
+			}else{
+					bat_full_batlife = false;
+					batlife_stop_flag = 0;
+					pr_info("wind %s  : bat_full_batlife =%d,batlife_stop_flag =%d,UI_SOC = %d\n",
+						__func__,bat_full_batlife,batlife_stop_flag,UI_SOC);
+			}
+			
+			pr_info("wind_log:battery_update Batlife_mode = %d, Batlife2Normal = %c, Normal2Batlife=%c\n ", BATLIFE_status.Batlife_mode,
+			BATLIFE_status.Batlife2Normal, BATLIFE_status.Normal2Batlife);
+			pr_info("wind_log:battery_update UI_SOC_BATLIFE = %d, UI_SOC = %d\n ",UI_SOC_BATLIFE,UI_SOC); 
+			return UI_SOC_BATLIFE;
+		
+	}
+	//lvwenkang@wind-mobi.com 20180222 end
+
+
+	return UI_SOC;
+
+#else
+
+	return DIV_ROUND_CLOSEST((msoc - 1) * (FULL_CAPACITY - 2),FULL_SOC_RAW - 2) + 1;
+#endif
+
 }
 
 #define HIGH_BIAS	3
@@ -3095,7 +3477,7 @@ static void slope_limiter_work(struct work_struct *work)
 	u8 buf[2];
 	int64_t val;
 
-	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);  //liulinsheng@wind-mobi.com
 
 	if (chip->status == POWER_SUPPLY_STATUS_CHARGING ||
 			chip->status == POWER_SUPPLY_STATUS_FULL) {
@@ -3219,7 +3601,7 @@ static int estimate_battery_age(struct fg_chip *chip, int *actual_capacity)
 	}
 	fg_mem_lock(chip);
 
-	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);  //liulinsheng@wind-mobi.com
 	if (batt_temp < 150 || batt_temp > 400) {
 		if (fg_debug_mask & FG_AGING)
 			pr_info("Battery temp (%d) out of range, aborting\n",
@@ -3419,7 +3801,7 @@ static int iavg_3b_to_uah(u8 *buffer, int delta_ms)
 
 static bool fg_is_temperature_ok_for_learning(struct fg_chip *chip)
 {
-	int batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+	int batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);  //liulinsheng@wind-mobi.com
 
 	if (batt_temp > chip->learning_data.max_temp
 			|| batt_temp < chip->learning_data.min_temp) {
@@ -3942,6 +4324,23 @@ static bool is_usb_present(struct fg_chip *chip)
 				POWER_SUPPLY_PROP_PRESENT, &prop);
 	return prop.intval != 0;
 }
+
+#if 1
+//hebiao@wind-mobi.com 20171123 begin
+bool check_charge(void)
+{
+	union power_supply_propval prop = {0,};
+	if (!g_fg_chip->usb_psy)
+		g_fg_chip->usb_psy = power_supply_get_by_name("usb");
+
+	if (g_fg_chip->usb_psy)
+		g_fg_chip->usb_psy->get_property(g_fg_chip->usb_psy,
+				POWER_SUPPLY_PROP_PRESENT, &prop);
+	return prop.intval != 0;
+}
+//hebiao@wind-mobi.com 20171123 end
+#endif
+
 
 static bool is_dc_present(struct fg_chip *chip)
 {
@@ -4470,7 +4869,7 @@ static bool fg_validate_battery_info(struct fg_chip *chip)
 		return false;
 	}
 
-	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+	batt_temp = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);      //liulinsheng@wind-mobi.com
 	if (abs(chip->batt_info[BATT_INFO_TEMP] - batt_temp) >
 			DELTA_BATT_TEMP) {
 		if (fg_debug_mask & FG_STATUS)
@@ -4590,6 +4989,16 @@ static int fg_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		val->intval = get_prop_capacity(chip);
+		//added by lvwenkang@wind-mobi.com b--
+		if(get_prop_capacity(chip) == 100)
+		{
+			g_batt_full_flag = 1;
+			printk("wind_log ui=%d,g_batt_full_flag=%d\n",get_prop_capacity(chip),g_batt_full_flag);
+		}else{
+			g_batt_full_flag = 0;
+			printk("wind_log ui=%d,g_batt_full_flag=%d\n",get_prop_capacity(chip),g_batt_full_flag);
+			}
+		//added by lvwenkang@wind-mobi.com e--
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 		val->intval = get_sram_prop_now(chip, FG_DATA_BATT_SOC);
@@ -4599,6 +5008,7 @@ static int fg_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval = get_sram_prop_now(chip, FG_DATA_CURRENT);
+		printk("val->intval = get_sram_prop_now(chip, FG_DATA_CURRENT)=%d\n",val->intval);  //liulinsheng@wind-mobi.com 20171120  begin
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = get_sram_prop_now(chip, FG_DATA_VOLTAGE);
@@ -4610,7 +5020,7 @@ static int fg_power_get_property(struct power_supply *psy,
 		val->intval = chip->batt_max_voltage_uv;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		val->intval = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);
+		val->intval = get_sram_prop_now(chip, FG_DATA_BATT_TEMP);  
 		break;
 	case POWER_SUPPLY_PROP_COOL_TEMP:
 		val->intval = get_prop_jeita_temp(chip, FG_MEM_SOFT_COLD);
@@ -4684,6 +5094,33 @@ static int fg_power_get_property(struct power_supply *psy,
 
 	return 0;
 }
+
+//liqiang@wind-mobi.com 20171025  begin
+int diag_get_batt_info(int flag)
+{
+	int rs = 0;
+	int  unused = 0;
+	update_sram_data(g_fg_chip, &unused); // update data now
+	
+	switch (flag){
+		case 0:
+			rs = get_prop_capacity(g_fg_chip);
+		break;
+		case 1:
+			rs = get_sram_prop_now(g_fg_chip, FG_DATA_VOLTAGE);
+		break;
+		case 2:
+			rs = get_sram_prop_now(g_fg_chip, FG_DATA_CURRENT);
+		break;
+	}
+	printk("wind-log fg: flag = %d, rs = %d", flag, rs);
+
+	if(rs < 0)
+		rs *= -1;
+	
+	return rs;
+}
+//liqiang@wind-mobi.com 20171025 end
 
 static int fg_power_set_property(struct power_supply *psy,
 				  enum power_supply_property psp,
@@ -6374,6 +6811,7 @@ wait:
 	/* read rslow compensation values if they're available */
 	rc = of_property_read_u32(profile_node, "qcom,chg-rs-to-rslow",
 					&chip->rslow_comp.chg_rs_to_rslow);
+	pr_info("wind battery data chg-rs-to-rslow:%d\n",chip->rslow_comp.chg_rs_to_rslow);      //liulinsheng@wind-mobi.com battery data				
 	if (rc) {
 		chip->rslow_comp.chg_rs_to_rslow = -EINVAL;
 		if (rc != -EINVAL)
@@ -6381,6 +6819,7 @@ wait:
 	}
 	rc = of_property_read_u32(profile_node, "qcom,chg-rslow-comp-c1",
 					&chip->rslow_comp.chg_rslow_comp_c1);
+	pr_info("wind battery data chg-rslow-comp-c1 :%d\n",chip->rslow_comp.chg_rslow_comp_c1);  //liulinsheng@wind-mobi.com battery data
 	if (rc) {
 		chip->rslow_comp.chg_rslow_comp_c1 = -EINVAL;
 		if (rc != -EINVAL)
@@ -6388,6 +6827,7 @@ wait:
 	}
 	rc = of_property_read_u32(profile_node, "qcom,chg-rslow-comp-c2",
 					&chip->rslow_comp.chg_rslow_comp_c2);
+	pr_info("wind battery data chg-rslow-comp-c2 :%d\n",chip->rslow_comp.chg_rslow_comp_c2);  //liulinsheng@wind-mobi.com battery data
 	if (rc) {
 		chip->rslow_comp.chg_rslow_comp_c2 = -EINVAL;
 		if (rc != -EINVAL)
@@ -6395,6 +6835,7 @@ wait:
 	}
 	rc = of_property_read_u32(profile_node, "qcom,chg-rslow-comp-thr",
 					&chip->rslow_comp.chg_rslow_comp_thr);
+	pr_info("wind battery data chg-rslow-comp-thr :%d\n",chip->rslow_comp.chg_rslow_comp_thr);  //liulinsheng@wind-mobi.com battery data
 	if (rc) {
 		chip->rslow_comp.chg_rslow_comp_thr = -EINVAL;
 		if (rc != -EINVAL)
@@ -8681,6 +9122,91 @@ done:
 	fg_cleanup(chip);
 }
 
+
+
+////lvwenkang@wind-mobi.com 20180115 begin use buffer_proinfo_1_u[590] store BATLIFE_status.Batlife2Normal ,	buffer_proinfo_1_u[592] store BATLIFE_status.Normal2Batlife;
+// wangjun@wind-mobi.com 20180226 begin
+#ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+// wangjun@wind-mobi.com 20180226 end
+void batterylife_charging_polling_work_handle(struct work_struct *work)
+{
+		static	int init_flag = 0;
+		if(init_flag == 0)
+		{
+			memset(buffer_proinfo_1_u, 0, buffer_proinfo_1_SIZE);
+			if(wind_diag_file_read(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1_u, buffer_proinfo_1_SIZE) == 1024)
+			{
+				//当分区可以正常读取后，置标志位init_flag为1，开机后第一次从分区读取电池保养信息
+				init_flag = 1;
+				printk("wind_log: init_flag = %d ,[590]byte:%c,[592]byte:%c\n",init_flag,buffer_proinfo_1_u[590],buffer_proinfo_1_u[592]);
+	
+				if((buffer_proinfo_1_u[590]=='n') || (buffer_proinfo_1_u[590]=='y'))
+				{
+					BATLIFE_status.Batlife2Normal = buffer_proinfo_1_u[590];	
+					printk("wind_log:get batterylife state from proinfo 590 byte:BATLIFE_status.Batlife_mode:%d,BATLIFE_status.Batlife2Normal:%c\n",
+					BATLIFE_status.Batlife_mode,BATLIFE_status.Batlife2Normal);
+				}
+				if((buffer_proinfo_1_u[592]=='n') || (buffer_proinfo_1_u[592]=='y'))
+				{
+					BATLIFE_status.Normal2Batlife = buffer_proinfo_1_u[592] ;
+					printk("wind_log:get batterylife state from proinfo 592 byte:BATLIFE_status.Batlife_mode:%d,BATLIFE_status.Normal2Batlife:%c\n",
+					BATLIFE_status.Batlife_mode,BATLIFE_status.Normal2Batlife);
+				}
+			}
+
+
+		}
+		
+		if(init_flag == 1)
+		{
+			//开机读取分区信息初始化后，当电量小于40 && Batlife_mode 状态发生改变时，重新将电池保养信息写入分区，避免频繁的操作分区
+			if( get_prop_capacity(g_fg_chip) < 40)
+			{  
+				if( BATLIFE_status.Batlife_mode == BATTERY_NORMAL_MODE)
+				{;
+					printk("wind_log: BATLIFE_status.Batlife2Normal =%c\n",BATLIFE_status.Batlife2Normal);
+					if(BATLIFE_status.Batlife2Normal != 'y')
+					{
+						BATLIFE_status.Normal2Batlife = 'n';
+						BATLIFE_status.Batlife2Normal = 'y';
+			
+						memset(buffer_proinfo_1, 0, buffer_proinfo_1_SIZE);
+						wind_diag_file_read(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);//set value then read 
+						printk("wind_log: begin buffer_proinfo_1[590]:%c,buffer_proinfo_1[592]:%c\n",buffer_proinfo_1[590],buffer_proinfo_1[592]);buffer_proinfo_1_u[590] = BATLIFE_status.Batlife2Normal ;
+						buffer_proinfo_1_u[592] = BATLIFE_status.Normal2Batlife;
+						memcpy(buffer_proinfo_1, &buffer_proinfo_1_u[0], 1024);
+						wind_diag_backup_file_write(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);
+						wind_diag_file_read(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);
+						printk("wind_log: end   buffer_proinfo_1[590]:%c,buffer_proinfo_1[592]:%c\n",buffer_proinfo_1[590],buffer_proinfo_1[592]);	
+					}
+				}else if(BATLIFE_status.Batlife_mode == BATTERY_LIFE_MODE)
+				{
+					printk("wind_log: BATLIFE_status.Normal2Batlife =%c\n",BATLIFE_status.Normal2Batlife);
+					if(BATLIFE_status.Normal2Batlife != 'y')
+					{
+						BATLIFE_status.Normal2Batlife = 'y';			  
+						BATLIFE_status.Batlife2Normal = 'n';
+
+						memset(buffer_proinfo_1, 0, buffer_proinfo_1_SIZE);
+						wind_diag_file_read(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);//set value then read 
+						printk("wind_log: begin buffer_proinfo_1[590]:%c,buffer_proinfo_1[592]:%c\n",buffer_proinfo_1[590],buffer_proinfo_1[592]);buffer_proinfo_1_u[590] = BATLIFE_status.Batlife2Normal ;
+						buffer_proinfo_1_u[592] = BATLIFE_status.Normal2Batlife;
+						memcpy(buffer_proinfo_1, &buffer_proinfo_1_u[0], 1024);
+						wind_diag_backup_file_write(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);
+						wind_diag_file_read(PROINFO_BUFFER_PATH_BACKUP, buffer_proinfo_1, buffer_proinfo_1_SIZE);
+						printk("wind_log: end   buffer_proinfo_1[590]:%c,buffer_proinfo_1[592]:%c\n",buffer_proinfo_1[590],buffer_proinfo_1[592]);	
+					}
+				}
+			}
+			
+		}
+schedule_delayed_work(&batterylife_charging_polling_work, msecs_to_jiffies(10000));    //liulinsheng@wind-mobi.com 				
+}
+// wangjun@wind-mobi.com 20180226 begin 
+#endif 
+// wangjun@wind-mobi.com 20180226 end 
+////lvwenkang@wind-mobi.com 20180115 end
+
 static int fg_probe(struct spmi_device *spmi)
 {
 	struct device *dev = &(spmi->dev);
@@ -8689,6 +9215,11 @@ static int fg_probe(struct spmi_device *spmi)
 	struct resource *resource;
 	u8 subtype, reg;
 	int rc = 0;
+//liulinsheng@wind-mobi.com 20170919 begin	
+#ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+		int ret_sysfile = 0;
+#endif
+//liulinsheng@wind-mobi.com 20170919 end
 
 	if (!spmi) {
 		pr_err("no valid spmi pointer\n");
@@ -8705,7 +9236,9 @@ static int fg_probe(struct spmi_device *spmi)
 		pr_err("Can't allocate fg_chip\n");
 		return -ENOMEM;
 	}
-
+	//liqiang@wind-mobi.com 20171225 begin
+ 	g_fg_chip = chip; 
+	//liqiang@wind-mobi.com 20171025 end
 	chip->spmi = spmi;
 	chip->dev = &(spmi->dev);
 
@@ -8768,7 +9301,16 @@ static int fg_probe(struct spmi_device *spmi)
 	INIT_WORK(&chip->slope_limiter_work, slope_limiter_work);
 	INIT_WORK(&chip->dischg_gain_work, discharge_gain_work);
 	INIT_WORK(&chip->cc_soc_store_work, cc_soc_store_work);
-	alarm_init(&chip->fg_cap_learning_alarm, ALARM_BOOTTIME,
+
+   // wangjun@wind-mobi.com 20180226 begin
+    #ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+    // wangjun@wind-mobi.com 20180226 end
+	INIT_DELAYED_WORK(&batterylife_charging_polling_work, batterylife_charging_polling_work_handle); //liulinsheng@wind-mobi 20171229
+    // wangjun@wind-mobi.com 20180226 begin
+    #endif
+    // wangjun@wind-mobi.com 20180226 end
+
+    alarm_init(&chip->fg_cap_learning_alarm, ALARM_BOOTTIME,
 			fg_cap_learning_alarm_cb);
 	alarm_init(&chip->hard_jeita_alarm, ALARM_BOOTTIME,
 			fg_hard_jeita_alarm_cb);
@@ -8778,7 +9320,16 @@ static int fg_probe(struct spmi_device *spmi)
 	init_completion(&chip->batt_id_avail);
 	init_completion(&chip->first_soc_done);
 	init_completion(&chip->fg_reset_done);
-	dev_set_drvdata(&spmi->dev, chip);
+
+    // wangjun@wind-mobi.com 20180226 begin
+    #ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+    // wangjun@wind-mobi.com 20180226 end
+	schedule_delayed_work(&batterylife_charging_polling_work, msecs_to_jiffies(20000));     //liulinsheng@wind-mobi 20171229
+    // wangjun@wind-mobi.com 20180226 begin
+    #endif
+    // wangjun@wind-mobi.com 20180226 end
+
+    dev_set_drvdata(&spmi->dev, chip);
 
 	spmi_for_each_container_dev(spmi_resource, spmi) {
 		if (!spmi_resource) {
@@ -8918,7 +9469,23 @@ static int fg_probe(struct spmi_device *spmi)
 	memset(chip->batt_info, INT_MAX, sizeof(chip->batt_info));
 
 	schedule_work(&chip->init_work);
+//liulinsheng@wind-mobi.com 20170919 begin
+#ifdef CONFIG_WIND_ASUS_BATTERY_LIFE_SUPPORT
+	ret_sysfile = sysfs_create_group(&chip->dev->kobj,
+			&Charging_batterylife_attr_group);
+	if (ret_sysfile) {
+		pr_info("%s:  line=%d,sysfs_create_group failed, ret_sysfile=%d\n", __func__,__LINE__,ret_sysfile);
+		return ret_sysfile;
+	}
 
+#endif
+//liulinsheng@wind-mobi.com 20170919 end
+	//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test	begin
+#if defined(AGING_POWER_TEST)
+			aging_power_test_proc_init();
+#endif
+	
+	//liulinsheng@wind-mobi.com 20170925 for demoapp&&aging test end
 	pr_info("FG Probe success - FG Revision DIG:%d.%d ANA:%d.%d PMIC subtype=%d\n",
 		chip->revision[DIG_MAJOR], chip->revision[DIG_MINOR],
 		chip->revision[ANA_MAJOR], chip->revision[ANA_MINOR],

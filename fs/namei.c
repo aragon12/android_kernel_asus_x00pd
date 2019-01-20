@@ -294,9 +294,21 @@ static int acl_permission_check(struct inode *inode, int mask)
 				return error;
 		}
 
+		// wangjun@wind-mobi.com 20180301 begin 
+		#ifdef CONFIG_WIND_PRO_A306
+		    // sunhuihui@wind-mobi.com twinapp patch 20171116 begin
+    if (in_group_p(inode->i_gid) ||
+        (__kgid_val(inode->i_gid)==9997 && in_group_p(KGIDT_INIT(235709997))) ||
+        (__kgid_val(inode->i_gid)==235709997 && in_group_p(KGIDT_INIT(9997))))
+        mode >>= 3;
+    }
+    // sunhuihui@wind-mobi.com twinapp patch 20171116 end
+	#else
 		if (in_group_p(inode->i_gid))
 			mode >>= 3;
 	}
+	#endif
+	// wangjun@wind-mobi.com 20180301 end 
 
 	/*
 	 * If the DACs are ok we don't need any capability check.

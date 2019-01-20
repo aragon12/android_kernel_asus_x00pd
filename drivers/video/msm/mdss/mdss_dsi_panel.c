@@ -33,6 +33,14 @@
 
 #define VSYNC_DELAY msecs_to_jiffies(17)
 
+//hebiao@wind-mobi.com 20171127 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+#include "wind_device_info.h"
+extern wind_device_info_t wind_device_info;
+#endif
+//hebiao@wind-mobi.com 20171127 end
+
+
 DEFINE_LED_TRIGGER(bl_led_trigger);
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
@@ -1691,6 +1699,7 @@ static bool mdss_dsi_cmp_panel_reg_v2(struct mdss_dsi_ctrl_pdata *ctrl)
 
 	for (j = 0; j < ctrl->groups; ++j) {
 		for (i = 0; i < len; ++i) {
+			printk("lcd esd return_buf[%d] = 0x%x  status_value = 0x%x %s %d\n", i, ctrl->return_buf[i], ctrl->status_value[group + i],  __func__, __LINE__);
 			if (ctrl->return_buf[i] !=
 				ctrl->status_value[group + i])
 				break;
@@ -2856,6 +2865,11 @@ int mdss_dsi_panel_init(struct device_node *node,
 						__func__, __LINE__);
 	} else {
 		pr_info("%s: Panel Name = %s\n", __func__, panel_name);
+//hebiao@wind-mobi.com 20171127 begin
+#ifdef CONFIG_WIND_DEVICE_INFO
+		sprintf(wind_device_info.lcm_module_info.ic_name, "%s", panel_name);
+#endif
+//hebiao@wind-mobi.com 20171127 end
 		strlcpy(&pinfo->panel_name[0], panel_name, MDSS_MAX_PANEL_LEN);
 	}
 	rc = mdss_panel_parse_dt(node, ctrl_pdata);

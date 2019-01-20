@@ -43,7 +43,10 @@ else
 	TIMESTAMP=$KBUILD_BUILD_TIMESTAMP
 fi
 if test -z "$KBUILD_BUILD_USER"; then
-	LINUX_COMPILE_BY=$(whoami | sed 's/\\/\\\\/')
+#xiongshigui@wind-mobi.com 20180206 mod begin
+#	LINUX_COMPILE_BY=$(whoami | sed 's/\\/\\\\/')
+	LINUX_COMPILE_BY=scm
+#xiongshigui@wind-mobi.com 20180206 mod end
 else
 	LINUX_COMPILE_BY=$KBUILD_BUILD_USER
 fi

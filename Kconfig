@@ -9,3 +9,23 @@ config SRCARCH
 	option env="SRCARCH"
 
 source "arch/$SRCARCH/Kconfig"
+
+#hebiao@wind-mobi.com 20171126 begin
+config WIND_DEVICE_INFO
+	bool "CONFIG_WIND_DEVICE_INFO"
+	default n
+	help
+		Select y or n
+#hebiao@wind-mobi.com 20171126 end
+#liqiang@wind-mobi.com 20180207 begin
+config WIND_PRO_A306
+	bool "CONFIG_WIND_PRO_A306"
+	default n
+	help
+		Select y or n
+config WIND_PRO_E300LWW
+	bool "CONFIG_WIND_PRO_E300LWW"
+	default n
+	help
+		Select y or n		
+#liqiang@wind-mobi.com 20180207 end

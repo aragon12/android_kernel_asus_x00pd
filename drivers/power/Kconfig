@@ -635,7 +635,20 @@ config MSM_BCL_PERIPHERAL_CTL
 	  Say Y here to enable this BCL PMIC peripheral driver. This driver
 	  provides routines to configure and monitor the BCL
 	  PMIC peripheral.
-
+#liulinsheng@wind-mobi.com 20170919 begin 
+config	WIND_ASUS_BATTERY_LIFE_SUPPORT
+        bool "WIND_ASUS_BATTERY_LIFE_SUPPORT"
+        default n
+        help
+          This macro definition just use  ASUS
+#liulinsheng@wind-mobi.com 20170919 end 
+#zhangkaiyuan@wind-mobi.com 20180105 begin 
+config	OTG_CTL_INPUT_KEY
+        bool "CONFIG_OTG_CTL_INPUT_KEY"
+        default n
+        help
+          This macro definition just use  ASUS
+#zhangkaiyuan@wind-mobi.com 20180105 end 
 source "drivers/power/reset/Kconfig"
 
 endif # POWER_SUPPLY

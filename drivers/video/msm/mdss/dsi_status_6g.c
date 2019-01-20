@@ -165,11 +165,16 @@ void mdss_check_dsi_ctrl_status(struct work_struct *work, uint32_t interval)
 		mutex_unlock(&mdp5_data->ov_lock);
 
 	if ((pstatus_data->mfd->panel_power_state == MDSS_PANEL_POWER_ON)) {
-		if (ret > 0)
+		if (ret > 0) {
+			printk("lcd esd check success %s %d\n", __func__, __LINE__);
 			schedule_delayed_work(&pstatus_data->check_status,
 				msecs_to_jiffies(interval));
-		else
+			
+		}
+		else {
+			printk("lcd esd check failed %s %d\n", __func__, __LINE__);
 			goto status_dead;
+		}
 	}
 sim:
 	if (pdata->panel_info.panel_force_dead) {

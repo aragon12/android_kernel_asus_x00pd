@@ -8758,6 +8758,11 @@ static const struct snd_kcontrol_new sec_mi2s_rx_port_mixer_controls[] = {
 	SOC_SINGLE_EXT("TERT_MI2S_TX", MSM_BACKEND_DAI_SECONDARY_MI2S_RX,
 	MSM_BACKEND_DAI_TERTIARY_MI2S_TX, 1, 0, msm_routing_get_port_mixer,
 	msm_routing_put_port_mixer),
+	/* lihaiyan@wind-mobi.com 20171030 +++ */
+	SOC_SINGLE_EXT("INT3_MI2S_TX", MSM_BACKEND_DAI_SECONDARY_MI2S_RX, 
+	MSM_BACKEND_DAI_INT3_MI2S_TX, 1, 0, msm_routing_get_port_mixer, 
+	msm_routing_put_port_mixer),
+	/* lihaiyan@wind-mobi.com 20171030 --- */
 	SOC_SINGLE_EXT("SLIM_0_TX", MSM_BACKEND_DAI_SECONDARY_MI2S_RX,
 	MSM_BACKEND_DAI_SLIMBUS_0_TX, 1, 0, msm_routing_get_port_mixer,
 	msm_routing_put_port_mixer),
@@ -11128,6 +11133,9 @@ static const struct snd_soc_dapm_route intercon[] = {
 	{"SEC_MI2S_RX Port Mixer", "PRI_MI2S_TX", "PRI_MI2S_TX"},
 	{"SEC_MI2S_RX Port Mixer", "INTERNAL_FM_TX", "INT_FM_TX"},
 
+	/* lihaiyan@wind-mobi.com 20171030  +++ */
+	{"SEC_MI2S_RX Port Mixer", "INT3_MI2S_TX", "INT3_MI2S_TX"},
+	/* lihaiyan@wind-mobi.com 20171030  --- */
 	{"PRI_MI2S_RX Audio Mixer", "MultiMedia1", "MM_DL1"},
 	{"PRI_MI2S_RX Audio Mixer", "MultiMedia2", "MM_DL2"},
 	{"PRI_MI2S_RX Audio Mixer", "MultiMedia3", "MM_DL3"},

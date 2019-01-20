@@ -160,6 +160,11 @@
 #define QPNP_VADC_HC1_CONV_TIME_MAX_US				214
 #define QPNP_VADC_HC1_ERR_COUNT					1600
 
+//renyongwei@wind-mobi.com 20180102 begin 
+//unsigned long case_therm_temp;
+//renyongwei@wind-mobi.com 20180102 end
+
+
 struct qpnp_vadc_mode_state {
 	bool				meas_int_mode;
 	bool				meas_int_request_in_queue;
@@ -2576,6 +2581,13 @@ static int qpnp_vadc_get_temp(struct thermal_zone_device *thermal,
 
 	rc = qpnp_vadc_read(vadc,
 				vadc_therm->vadc_channel, &result);
+	//renyongwei@wind-mobi.com 20180102 begin
+	/*printk("wind-log:qpnp_vadc_get_temp-vadc_therm->vadc_channel:%d\n",vadc_therm->vadc_channel);
+	if(vadc_therm->vadc_channel == 19)
+	{
+		printk("wind-log:sensor is case_therm\n");
+	}*/
+	//renyongwei@wind-mobi.com 20180102 end
 	if (rc) {
 		if (rc != -EPROBE_DEFER)
 			pr_err("VADC read error with %d\n", rc);
@@ -2583,7 +2595,11 @@ static int qpnp_vadc_get_temp(struct thermal_zone_device *thermal,
 	}
 
 	*temp = result.physical;
-
+	//renyongwei@wind-mobi.com 20180102 begin
+    /*printk("wind-log:qpnp_vadc_get_temp:%ld\n",*temp);
+	case_therm_temp = *temp;
+	printk("wind-log:qpnp_vadc_get_temp-case_therm_temp:%ld\n",case_therm_temp);*/
+	//renyongwei@wind-mobi.com 20180102 end
 	return rc;
 }
 

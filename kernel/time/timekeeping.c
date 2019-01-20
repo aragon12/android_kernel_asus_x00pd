@@ -1695,11 +1695,22 @@ struct timespec get_monotonic_coarse(void)
 /*
  * Must hold jiffies_lock
  */
+/* lihaiyan@wind-mobi.com 20170908 begin for powerkey +++*/
+int secs_after_kernel_boot = 0;
+bool boot_after_60sec = 0;
 void do_timer(unsigned long ticks)
 {
 	jiffies_64 += ticks;
 	calc_global_load(ticks);
+	
+	if( (boot_after_60sec == 0) &&  (jiffies % 100 == 0)){
+		secs_after_kernel_boot++;
+		//printk("[wind-tick] jiffies = %lld  sec=%lld  secs_after_kernel_boot= %d  boot_after_60sec=%d \n",(jiffies_64),(jiffies_64* TICK_NSEC) / NSEC_PER_SEC , secs_after_kernel_boot, boot_after_60sec);
+		if(secs_after_kernel_boot >= 60)
+			boot_after_60sec = 1;
+	}	
 }
+/* lihaiyan@wind-mobi.com 20170908 begin for powerkey ---*/
 
 /**
  * ktime_get_update_offsets_tick - hrtimer helper

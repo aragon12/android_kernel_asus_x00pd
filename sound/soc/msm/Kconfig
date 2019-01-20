@@ -253,7 +253,18 @@ config SND_SOC_MSM8909
 	 interfaces with DSP, also it will enable
 	 the machine drivers and the corresponding
 	 DAI-links.
-
+#duanqianshuai@wind-mobi.com 20180130 PA begin
+config SND_SOC_AW87339
+	tristate "SoC Audio for awinic AW87339 Smart K PA"
+	depends on I2C
+	help
+	This option enables support for AW87339 Smart K PA.
+config AUDIO_PA_FLAG
+	tristate "SoC Audio for awinic AW87339 Smart K PA"
+	depends on I2C
+	help
+	This option enables support for AW87339 Smart K PA.
+#duanqianshuai@wind-mobi.com 20180130 PA end
 config SND_SOC_MDM9640
 	tristate "SoC Machine driver for MDM9640 boards"
 	depends on ARCH_MDM9640

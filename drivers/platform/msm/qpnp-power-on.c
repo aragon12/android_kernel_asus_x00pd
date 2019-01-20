@@ -229,6 +229,21 @@ struct qpnp_pon {
 };
 
 static struct qpnp_pon *sys_reset_dev;
+//liqiang@wind-mobi.com 20171122 begin
+struct input_dev  *wind_diag_dev;
+
+
+void power_key_input(void)
+{
+	input_report_key(wind_diag_dev, KEY_POWER, 1);
+	input_sync(wind_diag_dev);
+	
+	input_report_key(wind_diag_dev, KEY_POWER, 0);
+	input_sync(wind_diag_dev);
+
+}
+
+//liqiang@wind-mobi.com 20171122 end
 static DEFINE_SPINLOCK(spon_list_slock);
 static LIST_HEAD(spon_dev_list);
 
@@ -868,15 +883,80 @@ qpnp_pon_input_dispatch(struct qpnp_pon *pon, u32 pon_type)
 	return 0;
 }
 
+/* lihaiyan@wind-mobi.com 20170908 begin for powerkey +++ */
+
+//extern int secs_after_kernel_boot;
+extern bool boot_after_60sec;
+static int kpdpwr_key_cnt = 0;
+
+struct qpnp_pon *pon_bak = NULL;
+//#define PON_INT_RT_STS			0x10
+
+#include <linux/timer.h>
+#include <linux/reboot.h>
+#include <linux/syscalls.h>
+#include <linux/workqueue.h>
+
+struct timer_list detect_pwrkey_timer;
+
+static void kernel_restart_work_fn(struct work_struct *work)
+{
+	printk("[wind-tick][kpdpwr]long press pwk, start to restar system \n");
+	kernel_restart(NULL);
+}
+
+static DECLARE_WORK( kernel_restart_work, kernel_restart_work_fn);
+
+static void detect_pwrkey_timer_func(unsigned long data)
+{
+	//printk("[wind-tick][kpdpwr] detect_pwrkey_timer_func,kpdpwr_key_cnt=%d \n",kpdpwr_key_cnt);
+	if(kpdpwr_key_cnt == 1)
+		schedule_work(&kernel_restart_work);
+/*
+	u8 reg=0;
+	u8 rc=0;
+
+	rc = spmi_ext_register_readl(pon_bak->spmi->ctrl, pon_bak->spmi->sid,
+			pon_bak->base + PON_INT_RT_STS, &reg, 1);
+	
+	printk("[wind-tick][kpdpwr] powerkey stat = 0x%x \n",reg);
+	
+	if(reg == 0x1){
+
+		//kernel_restart(NULL);
+		schedule_work(&kernel_restart_work);
+	}
+*/
+}
+
 static irqreturn_t qpnp_kpdpwr_irq(int irq, void *_pon)
 {
 	int rc;
 	struct qpnp_pon *pon = _pon;
+	pon_bak = _pon;
 
 	rc = qpnp_pon_input_dispatch(pon, PON_KPDPWR);
 	if (rc)
 		dev_err(&pon->spmi->dev, "Unable to send input event\n");
 
+	
+	if(boot_after_60sec){
+		kpdpwr_key_cnt ++;  // press on pwrkey, this func will be called two times,so the fiset time for press down and second for release;
+		if( kpdpwr_key_cnt != 2 ){
+			printk("[wind-tick][kpdpwr] start add timer\n");
+			init_timer(&detect_pwrkey_timer);
+			detect_pwrkey_timer.expires = jiffies + 6*HZ;
+			detect_pwrkey_timer.function = detect_pwrkey_timer_func;
+			detect_pwrkey_timer.data = 0UL;
+			add_timer(&detect_pwrkey_timer);
+		}else{
+			printk("[wind-tick][kpdpwr] start del timer\n");
+			del_timer(&detect_pwrkey_timer);
+		}
+		kpdpwr_key_cnt %= 2;
+	}	
+	/* lihaiyan@wind-mobi.com 20170908 end for powerkey ---*/
+	
 	return IRQ_HANDLED;
 }
 
@@ -1268,6 +1348,11 @@ qpnp_pon_config_input(struct qpnp_pon *pon,  struct qpnp_pon_config *cfg)
 	/* don't send dummy release event when system resumes */
 	__set_bit(INPUT_PROP_NO_DUMMY_RELEASE, pon->pon_input->propbit);
 	input_set_capability(pon->pon_input, EV_KEY, cfg->key_code);
+	
+	//liqiang@wind-mobi.com 20171122 begin
+	wind_diag_dev = pon->pon_input;
+	
+	//liqiang@wind-mobi.com 20171122 end
 
 	return 0;
 }

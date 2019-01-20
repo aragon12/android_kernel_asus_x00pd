@@ -4022,7 +4022,10 @@ static int android_bind(struct usb_composite_dev *cdev)
 	strlcpy(manufacturer_string, "Android",
 		sizeof(manufacturer_string) - 1);
 	strlcpy(product_string, "Android", sizeof(product_string) - 1);
-	strlcpy(serial_string, "0123456789ABCDEF", sizeof(serial_string) - 1);
+	//xiongshigui@wind-mobi.com 20180112 mod begin
+	//strlcpy(serial_string, "0123456789ABCDEF", sizeof(serial_string) - 1);
+	strlcpy(serial_string, "C4ATAS000000", sizeof(serial_string) - 1);
+	//xiongshigui@wind-mobi.com 20180112 mod end
 
 	id = usb_string_id(cdev);
 	if (id < 0)

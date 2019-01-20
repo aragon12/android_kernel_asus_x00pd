@@ -38,7 +38,17 @@
 #include "diag_masks.h"
 #include "diag_usb.h"
 #include "diag_mux.h"
+//liqiang@wind-mobi.com 20171013 add begin
+#include "diag_wind.h"
+#include <linux/uaccess.h>
+#include <linux/fs.h>
+#include <linux/fs_struct.h>
+#include <linux/file.h>
+#include <linux/delay.h>
+#include <linux/suspend.h>
+extern int pm_autosleep_set_state(suspend_state_t state);
 
+//liqiang@wind-mobi.com 20171013 add end
 #define STM_CMD_VERSION_OFFSET	4
 #define STM_CMD_MASK_OFFSET	5
 #define STM_CMD_DATA_OFFSET	6
@@ -871,6 +881,8 @@ void diag_send_error_rsp(unsigned char *buf, int len)
 	diag_send_rsp(driver->apps_rsp_buf, len + 1);
 }
 
+
+
 int diag_process_apps_pkt(unsigned char *buf, int len,
 			struct diag_md_session_t *info)
 {
@@ -881,7 +893,10 @@ int diag_process_apps_pkt(unsigned char *buf, int len,
 	struct diag_cmd_reg_entry_t entry;
 	struct diag_cmd_reg_entry_t *temp_entry = NULL;
 	struct diag_cmd_reg_t *reg_item = NULL;
-
+	//liqiang@wind-mobi.com 20171013 add begin
+	int tx_len = 0;
+	int cmd = 0;
+	//liqiang@wind-mobi.com 20171013 add end
 	if (!buf)
 		return -EIO;
 
@@ -1020,6 +1035,19 @@ int diag_process_apps_pkt(unsigned char *buf, int len,
 		diag_send_rsp(driver->apps_rsp_buf, 6);
 		return 0;
 	}
+	//liqiang@wind-mobi.com 20171013 add begin
+	else if ( (cmd = wind_diag_cmd_handler(buf, len, driver->apps_rsp_buf, &tx_len) ) != -1) {
+                printk(KERN_CRIT "diag: begin!\n");           
+                diag_send_rsp(driver->apps_rsp_buf, tx_len);
+                printk(KERN_CRIT "diag:  end!\n");
+				
+				if(cmd == SMT_CMD_SLEEP){
+					printk(KERN_CRIT "sleep begin!\n"); 
+					//pm_autosleep_set_state(PM_SUSPEND_MEM);
+				}
+				
+                return 0;
+     }
 	/* Mobile ID Rsp */
 	else if ((*buf == DIAG_CMD_DIAG_SUBSYS) &&
 		(*(buf+1) == DIAG_SS_PARAMS) &&

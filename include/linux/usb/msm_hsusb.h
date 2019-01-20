@@ -289,6 +289,7 @@ enum usb_id_state {
  */
 struct msm_otg_platform_data {
 	int *phy_init_seq;
+    int *phy_host_init_seq; //zhangkaiyuan@wind-mobi.com 20180118
 	int phy_init_sz;
 	int (*vbus_power)(bool on);
 	unsigned power_budget;
